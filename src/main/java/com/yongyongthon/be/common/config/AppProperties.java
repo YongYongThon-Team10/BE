@@ -54,6 +54,21 @@ public class AppProperties {
     @Value("${app.nearby-excluded-keywords:모집}")
     private String nearbyExcludedKeywords;
 
+    /** 행사 데이터 출처: json(엑셀 변환 파일) 또는 postgres(팀 행사 DB) */
+    @Value("${app.event-data.source:json}")
+    private String eventSource;
+
+    /** 행사 DB 접속 정보 (postgres 모드). 비밀번호는 환경변수 EVENT_DB_PASSWORD로만 받는다 */
+    @Value("${app.event-data.db-url:jdbc:postgresql://127.0.0.1:15432/yongin_events?sslmode=require}")
+    private String eventDbUrl;
+
+    @Value("${app.event-data.db-username:yongin_reader}")
+    private String eventDbUsername;
+
+    @lombok.Getter(lombok.AccessLevel.NONE)
+    @Value("${app.event-data.db-password:}")
+    private String eventDbPassword;
+
     /** 행사 데이터 JSON 위치 (지시서 8장) */
     @Value("${app.event-data.events-path:classpath:data/events_all.json}")
     private String eventsPath;
@@ -74,6 +89,11 @@ public class AppProperties {
                 .map(String::trim)
                 .filter(v -> !v.isEmpty())
                 .toList();
+    }
+
+    /** toString 등으로 새지 않게 getter를 따로 둔다 */
+    public String eventDbPassword() {
+        return eventDbPassword;
     }
 
     public double speedOf(String transport) {
