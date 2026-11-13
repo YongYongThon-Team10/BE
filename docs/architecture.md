@@ -3,7 +3,7 @@
 이 문서는 이 저장소의 현재 코드 상태를 기록한다. 기능을 바꾸면 같은 작업 안에서 함께 갱신한다.
 S5 일정, S6 내 코스(`itinerary`, `course` 패키지)의 세부 동작은 [PROGRESS.md](../PROGRESS.md)에 있고, 이 문서는 구조와 공통 부분, 신형 담당 API(행사, 검색, 장소, 관심 행사)를 다룬다.
 
-> 마지막 갱신: 2026-11-14, dev 기준으로 다시 작성 (PR 8, 10 머지 후). 신형 API에 Swagger 오류 코드 문서 추가
+> 마지막 갱신: 2026-11-14, E4의 상대 날짜와 동의 소속 구를 서버가 정하도록 수정 (실제 OpenAI 호출에서 오류 확인)
 
 ## 한눈에 보기
 
@@ -74,6 +74,7 @@ src/main/java/com/yongyongthon/be/
   search/
     controller/SearchController.java  # /api/search (E4)
     service/SearchService.java    # 프롬프트 생성, 모델 출력 정리, unresolved 계산
+    service/SearchConditionRules.java  # 상대 날짜 계산, 용인시 동, 읍, 면과 소속 구 표
     data/dto/                     # SearchParseRequestDto, SearchParseResponseDto
   user/                           # 회원가입, 로그인, 로그아웃, 재발급 (/api/v1/auth)
 scripts/seed_events.py            # 팀 행사 DB 또는 엑셀을 events, event_sources INSERT SQL로 변환
@@ -137,11 +138,16 @@ E2 응답에서 데이터가 없어 고정값으로 내보내는 필드:
 E4 동작:
 
 1. `query`(공백 불가, 200자 이하)와 `today`(선택, 생략 시 서버 날짜)를 받아 OpenAI에 보낸다. 프롬프트에 기준일과 요일을 넣는다
-2. 모델 출력은 믿지 않고 허용된 값만 남긴다. 날짜는 `yyyy-MM-dd`만, 기간이 역전되면 두 날짜 모두 버린다. 구는 세 개만, 동은 "동"으로 끝나는 것만, 나머지는 명세의 값 목록만
-3. `unresolved`: `dateFrom`, `district`, `companion`, `budget`, `indoorOutdoor` 중 null인 것
-4. `parsed`: 조건이 하나라도 있으면 true. false면 conditions는 전부 null이고 `message`에 안내 문구
-5. 오류: 400 E4001(AI 호출 전), 502 E5021(키 없음, 연결 실패, 오류 응답, JSON이 아닌 출력), 504 E5041(타임아웃 15초)
-6. 동만 말했을 때 소속 구를 채우는 것은 모델에 맡긴다. 서버는 동과 구의 대응을 검증하지 않는다
+2. 모델 출력은 믿지 않고 허용된 값만 남긴다. 날짜는 `yyyy-MM-dd`만, 기간이 역전되면 두 날짜 모두 버린다. 나머지는 명세의 값 목록만
+3. 상대 날짜(오늘, 내일, 모레, 이번 주, 다음 주, 이번 주말, 주말, 다음 주말)가 문장에 있으면(띄어쓰기 무시) 서버가 계산한 기간으로 덮어쓴다. 같은 표를 프롬프트에도 넣는다. 이번 주말은 토요일이면 오늘과 내일, 일요일이면 오늘만, 그 외에는 다가오는 토요일과 일요일
+4. 동은 용인시 동 목록(`SearchConditionRules.AREA_TO_DISTRICT`, 위키백과 2026-10-15 판 기준)에 있고 문장에 실제로 나온 것만 남긴다. "동백"처럼 "동"을 빼고 말해도 인정한다
+5. 구는 세 가지를 합친다: 문장에 구 이름이 나온 모델의 구("수지"만 말해도 인정), 남은 동의 소속 구(표 기준), 문장에 나온 읍과 면의 소속 구(모두 처인구). 모델이 동의 소속 구를 틀리게 내는 경우가 있어서(마북동을 처인구로) 모델 값만으로는 정하지 않는다
+6. "이동", "구성", "중앙", "동부", "남사"처럼 흔한 낱말과 겹치는 지명은 전체 이름(이동읍 등)으로만 찾는다
+7. 예산은 무료나 "돈은 상관없다"를 직접 말했을 때만 채우도록 프롬프트에 적었다 (말하지 않으면 null)
+8. `unresolved`: `dateFrom`, `district`, `companion`, `budget`, `indoorOutdoor` 중 null인 것
+9. `parsed`: 조건이 하나라도 있으면 true. false면 conditions는 전부 null이고 `message`에 안내 문구
+10. 오류: 400 E4001(AI 호출 전), 502 E5021(키 없음, 연결 실패, 오류 응답, JSON이 아닌 출력), 504 E5041(타임아웃 15초)
+11. 실제 호출 확인(2026-11-14, gpt-4o-mini): 한 번에 2초 안팎
 
 E14 동작:
 
@@ -336,5 +342,6 @@ HTTP 상태 코드는 `ErrorCode`의 값을 핸들러가 적용한다. 요청 �
 | 없는 경로 응답 | 매핑되지 않은 경로가 `Exception` 핸들러로 떨어져 404가 아닌 C500 | 클라이언트가 잘못된 경로를 서버 오류로 봄 |
 | 요청 검증 응답 | 실패 시 필드 정보 없이 코드만 응답 | 클라이언트가 어떤 필드가 틀렸는지 알 수 없음 |
 | CORS 기본값 | local 기본값이 `*`이고 `allowCredentials`가 true | 운영에서는 허용 Origin을 명시해야 함 |
-| 실제 외부 호출 | OpenAI, 카카오 호출은 로컬 HTTP 서버로만 테스트 | 키를 넣고 한 번 실제로 확인해야 함 |
+| 실제 외부 호출 | OpenAI는 실제 호출 확인(2026-11-14). 카카오는 키가 없어 아직 미확인 | 카카오 키를 넣고 E14를 한 번 실제로 확인해야 함 |
+| 행정 구역 표 | 동, 읍, 면과 소속 구를 코드에 표로 둠 | 행정 구역이 바뀌면 `SearchConditionRules`를 고쳐야 함 |
 | GitHub 기본 브랜치 | 기본 브랜치가 `main` | PR을 만들 때 base를 `dev`로 직접 바꿔야 함 |
