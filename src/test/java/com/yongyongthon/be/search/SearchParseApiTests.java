@@ -166,6 +166,29 @@ class SearchParseApiTests {
     }
 
     @Test
+    void 요일이_있으면_그_요일로_계산한다() throws Exception {
+        // 실제 사례: "다음 주 토요일"이 다음 주 전체(11-16 ~ 11-22)로 덮어써졌다 (2026-11-14 토 기준)
+        modelReturns("{\"dateFrom\":\"2026-11-21\",\"dateTo\":\"2026-11-21\"}");
+        expectDates("다음 주 토요일 아이랑", "2026-11-14", "2026-11-21", "2026-11-21");
+        expectDates("다음주 토요일 일요일", "2026-11-14", "2026-11-21", "2026-11-22");
+        expectDates("이번 주 금요일", "2026-11-12", "2026-11-13", "2026-11-13");
+        expectDates("금주 일요일", "2026-11-12", "2026-11-15", "2026-11-15");
+        // 주 표현이 없으면 오늘을 포함해 가장 가까운 그 요일
+        expectDates("토요일에 갈 곳", "2026-11-14", "2026-11-14", "2026-11-14");
+        expectDates("월요일 공연", "2026-11-14", "2026-11-16", "2026-11-16");
+        // 요일 없이 주만 말하면 그 주 전체. 주말 표현에 요일이 붙으면 그 요일 하루
+        expectDates("다음 주 공연", "2026-11-14", "2026-11-16", "2026-11-22");
+        expectDates("다음 주말 토요일", "2026-11-14", "2026-11-21", "2026-11-21");
+        expectDates("이번 주말 일요일", "2026-11-14", "2026-11-15", "2026-11-15");
+    }
+
+    private void expectDates(String query, String today, String from, String to) throws Exception {
+        parse("{\"query\":\"" + query + "\",\"today\":\"" + today + "\"}")
+                .andExpect(jsonPath("$.data.conditions.dateFrom").value(from))
+                .andExpect(jsonPath("$.data.conditions.dateTo").value(to));
+    }
+
+    @Test
     void 기간이_역전되면_날짜를_모두_버린다() throws Exception {
         modelReturns("{\"dateFrom\":\"2026-10-18\",\"dateTo\":\"2026-10-17\",\"budget\":\"free\"}");
 
