@@ -1,0 +1,15 @@
+# S5, S6 일정 API 테스트용. MariaDB 대신 H2 메모리 DB, 행사 데이터는 테스트용 JSON
+spring:
+  datasource:
+    url: jdbc:h2:mem:itinerary-test;MODE=MariaDB;DB_CLOSE_DELAY=-1;NON_KEYWORDS=USER,VALUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  event-data:
+    events-path: classpath:data/events_test.json
