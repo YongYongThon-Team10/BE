@@ -89,7 +89,7 @@ class SearchParseApiTests {
 
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(openAiClient).completeJson(prompt.capture(), eq("이번 주말"), eq(Duration.ofSeconds(15)));
-        assertThat(prompt.getValue()).contains("2026-10-17(토요일)");
+        assertThat(prompt.getValue()).contains("2026-10-17(토요일)").contains("이번주말: 2026-10-17 ~ 2026-10-18");
     }
 
     @Test
@@ -103,12 +103,66 @@ class SearchParseApiTests {
                 .andExpect(jsonPath("$.data.parsed").value(true))
                 .andExpect(jsonPath("$.data.conditions.dateFrom").value(nullValue()))
                 .andExpect(jsonPath("$.data.conditions.dateTo").value("2026-10-18"))
-                .andExpect(jsonPath("$.data.conditions.district").value(contains("수지구")))
+                // 문장에 구 이름이 없으면 모델이 낸 구는 버린다
+                .andExpect(jsonPath("$.data.conditions.district").value(nullValue()))
                 .andExpect(jsonPath("$.data.conditions.dong").value(nullValue()))
                 .andExpect(jsonPath("$.data.conditions.companion").value(nullValue()))
                 .andExpect(jsonPath("$.data.conditions.kidsAge").value(nullValue()))
                 .andExpect(jsonPath("$.data.conditions.budget").value(nullValue()))
                 .andExpect(jsonPath("$.data.conditions.indoorOutdoor").value(nullValue()));
+    }
+
+    @Test
+    void 동의_소속_구는_서버_표로_채우고_모델이_틀린_구는_버린다() throws Exception {
+        // 실제 OpenAI가 마북동을 처인구로 낸 사례 (2026-11-14)
+        modelReturns("{\"district\":[\"처인구\"],\"dong\":[\"마북동\"]}");
+
+        parse("{\"query\":\"마북동에서 아이랑\",\"today\":\"2026-11-14\"}")
+                .andExpect(jsonPath("$.data.conditions.district").value(contains("기흥구")))
+                .andExpect(jsonPath("$.data.conditions.dong").value(contains("마북동")));
+    }
+
+    @Test
+    void 구는_구_없이_말해도_인정하고_읍면은_처인구() throws Exception {
+        modelReturns("{\"district\":[\"수지구\"]}");
+        parse("{\"query\":\"수지 쪽 공연\"}")
+                .andExpect(jsonPath("$.data.conditions.district").value(contains("수지구")));
+
+        modelReturns("{}");
+        parse("{\"query\":\"백암 순대 축제\"}")
+                .andExpect(jsonPath("$.data.conditions.district").value(contains("처인구")))
+                .andExpect(jsonPath("$.data.conditions.dong").value(nullValue()));
+    }
+
+    @Test
+    void 흔한_낱말은_지명으로_읽지_않는다() throws Exception {
+        modelReturns("{}");
+
+        parse("{\"query\":\"이동 거리 짧은 가족 구성 맞춤 행사\"}")
+                .andExpect(jsonPath("$.data.conditions.district").value(nullValue()));
+    }
+
+    @Test
+    void 상대_날짜는_서버가_계산한_값으로_덮어쓴다() throws Exception {
+        // 실제 OpenAI가 토요일 기준 이번 주말과 다음 주를 모두 오늘 하루로 낸 사례 (2026-11-14 토)
+        modelReturns("{\"dateFrom\":\"2026-11-14\",\"dateTo\":\"2026-11-14\"}");
+
+        parse("{\"query\":\"이번 주말\",\"today\":\"2026-11-14\"}")
+                .andExpect(jsonPath("$.data.conditions.dateFrom").value("2026-11-14"))
+                .andExpect(jsonPath("$.data.conditions.dateTo").value("2026-11-15"));
+        parse("{\"query\":\"다음주 공연\",\"today\":\"2026-11-14\"}")
+                .andExpect(jsonPath("$.data.conditions.dateFrom").value("2026-11-16"))
+                .andExpect(jsonPath("$.data.conditions.dateTo").value("2026-11-22"));
+        parse("{\"query\":\"다음 주말\",\"today\":\"2026-11-14\"}")
+                .andExpect(jsonPath("$.data.conditions.dateFrom").value("2026-11-21"))
+                .andExpect(jsonPath("$.data.conditions.dateTo").value("2026-11-22"));
+        // 평일 기준 이번 주말과 일요일 기준 이번 주말
+        parse("{\"query\":\"주말에\",\"today\":\"2026-11-12\"}")
+                .andExpect(jsonPath("$.data.conditions.dateFrom").value("2026-11-14"))
+                .andExpect(jsonPath("$.data.conditions.dateTo").value("2026-11-15"));
+        parse("{\"query\":\"이번 주말\",\"today\":\"2026-11-15\"}")
+                .andExpect(jsonPath("$.data.conditions.dateFrom").value("2026-11-15"))
+                .andExpect(jsonPath("$.data.conditions.dateTo").value("2026-11-15"));
     }
 
     @Test
