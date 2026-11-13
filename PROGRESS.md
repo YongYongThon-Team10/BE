@@ -12,7 +12,7 @@
 | 인증 | 없음. 위 세 경로를 `SecurityConfiguration`의 `permitAll()`에 추가 |
 | 오류 코드 | 팀 `C` 코드 체계 (아래 표) |
 | 행사 데이터 | 용인시 축제 행사 엑셀(1,825건)을 `tools/convert_events.py`로 바꾼 `src/main/resources/data/events_all.json` |
-| 행사 DB | PostgreSQL(`yongin_events`, GCP IAP 터널). 테이블 구조 확인 후 `EventRepository` DB 구현 추가 예정 |
+| 행사 DB | PostgreSQL(`yongin_events`의 `events` 테이블, GCP IAP 터널). `EVENT_DATA_SOURCE=postgres`로 켠다 (기본은 json) |
 | 테스트 | H2 메모리 DB + 테스트용 행사 JSON (`src/test/resources/application-test.yml`) |
 
 ## 오류 코드 (지시서 코드에서 팀 코드로)
@@ -81,6 +81,17 @@ C4041은 팀의 USER_DATA_NOT_FOUND가 쓰고 있어서 404 일련번호를 C404
 | 13 | GET | /api/v1/me/courses | 완료 |
 | 14 | DELETE | /api/v1/me/courses/{courseId} | 완료 |
 | 15 | GET | /api/v1/me/calendar | 완료 |
+
+## 행사 데이터 출처
+
+| 값 (`EVENT_DATA_SOURCE`) | 구현 | 설명 |
+| --- | --- | --- |
+| `json` (기본) | `JsonEventRepository` | `src/main/resources/data/events_all.json`. 설정, 외부 접속 없이 바로 실행 |
+| `postgres` | `PostgresEventRepository` | 팀 행사 DB `events` 테이블. IAP 터널과 `EVENT_DB_PASSWORD`(.env, 비밀 값) 필요. 접속 실패 시 서버 시작 중단 |
+
+두 구현 모두 시작할 때 전체를 한 번 읽어 메모리에 둔다 (`InMemoryEventRepository`). 행사 DB가 바뀌면 서버를 다시 켜야 반영된다. 팀 주 DB(MariaDB)와 섞이지 않게 행사 DB용 DataSource 빈은 만들지 않는다.
+
+행사 DB 컬럼 대응: `event_id`, `title`(name), `source_category`(category), `start_date`, `end_date`, `event_hours`(time), `venue`(placeName), `address` 또는 `verified_address`, `fee`, `latitude`, `longitude`, `duplicate_status`와 `duplicate_representative_id`(duplicateOf). 정리 규칙은 아래 엑셀 변환 규칙과 같다 (`EventFieldRules`).
 
 ## 행사 데이터 변환 규칙 (엑셀에서 JSON으로)
 

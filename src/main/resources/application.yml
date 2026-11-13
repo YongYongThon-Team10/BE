@@ -21,3 +21,11 @@ jwt:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+# S5, S6 행사 데이터 출처. json(기본, 엑셀 변환 파일) 또는 postgres(팀 행사 DB, GCP IAP 터널 필요)
+app:
+  event-data:
+    source: ${EVENT_DATA_SOURCE:json}
+    db-url: ${EVENT_DB_URL:jdbc:postgresql://127.0.0.1:15432/yongin_events?sslmode=require}
+    db-username: ${EVENT_DB_USERNAME:yongin_reader}
+    db-password: ${EVENT_DB_PASSWORD:}
