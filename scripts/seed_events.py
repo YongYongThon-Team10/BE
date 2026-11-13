@@ -61,7 +61,8 @@ COORD_PRECISION = {
     "집결·교육 장소": "area",
     "행사 구간 기준점": "area",
 }
-NO_COORDINATE = {"온라인", "장소별 상이"}
+# 확인불가는 행사 DB에만 있는 값이다 (4건, 모두 좌표 없음)
+NO_COORDINATE = {"온라인", "장소별 상이", "확인불가"}
 
 # 적재에서 빼는 중복 행
 DUPLICATE_MARKS = {"중복 확인", "중복 일정"}
@@ -353,6 +354,7 @@ def self_test():
     assert coordinate("해당 없음", "해당 없음", "온라인") == (None, None, None)
     assert coordinate(37.2, 127.1, "복수 장소") == (37.2, 127.1, "area")
     assert coordinate(37.2, 127.1, "장소별 상이") == (None, None, None)
+    assert coordinate(None, None, "확인불가") == (None, None, None)
     assert receipt_time("2025.12.3 10:00") == datetime(2025, 12, 3, 10, 0)
     assert receipt_time("2026.3.29") == datetime(2026, 3, 29)
     s = sources("용인시청 문화관광포털 | 용인관광 공식 블로그", "https://a", "https://b | https://c")
