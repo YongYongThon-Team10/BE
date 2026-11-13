@@ -1,6 +1,8 @@
 package com.yongyongthon.be.place.controller;
 
+import com.yongyongthon.be.common.response.ErrorCode;
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.swagger.ApiErrorCodes;
 import com.yongyongthon.be.place.data.dto.PlaceSearchResponseDto;
 import com.yongyongthon.be.place.service.PlaceService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +23,7 @@ public class PlaceController {
 
     @GetMapping("/search")
     @Operation(summary = "출발지 장소 및 역 검색 (E14)")
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.PLACE_SEARCH_FAILED})
     public GlobalResponse<PlaceSearchResponseDto> search(@RequestParam @NotBlank @Size(max = 100) String query) {
         return placeService.search(query.strip());
     }
