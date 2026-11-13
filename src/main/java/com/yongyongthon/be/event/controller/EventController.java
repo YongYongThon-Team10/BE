@@ -1,6 +1,8 @@
 package com.yongyongthon.be.event.controller;
 
+import com.yongyongthon.be.common.response.ErrorCode;
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.swagger.ApiErrorCodes;
 import com.yongyongthon.be.common.security.SecurityUtil;
 import com.yongyongthon.be.event.data.dto.EventDetailResponseDto;
 import com.yongyongthon.be.event.data.dto.EventDiscrepancyResponseDto;
@@ -25,6 +27,7 @@ public class EventController {
 
     @GetMapping
     @Operation(summary = "행사 목록 및 지도 조회 (E1)")
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.DISTANCE_COORDINATE_REQUIRED})
     public GlobalResponse<EventListResponseDto> searchEvents(
             @ParameterObject @Valid @ModelAttribute EventSearchRequestDto request) {
         return eventService.searchEvents(request, SecurityUtil.getUsernameOrNull());
@@ -32,12 +35,14 @@ public class EventController {
 
     @GetMapping("/{eventId}")
     @Operation(summary = "행사 상세 조회 (E2)")
+    @ApiErrorCodes({ErrorCode.EVENT_NOT_FOUND})
     public GlobalResponse<EventDetailResponseDto> getEvent(@PathVariable String eventId) {
         return eventService.getEvent(eventId, SecurityUtil.getUsernameOrNull());
     }
 
     @GetMapping("/{eventId}/discrepancies")
     @Operation(summary = "행사 안내 상이 내용 조회 (E3)")
+    @ApiErrorCodes({ErrorCode.EVENT_NOT_FOUND})
     public GlobalResponse<EventDiscrepancyResponseDto> getDiscrepancies(@PathVariable String eventId) {
         return eventService.getDiscrepancies(eventId);
     }

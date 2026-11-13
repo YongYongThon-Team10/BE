@@ -1,6 +1,8 @@
 package com.yongyongthon.be.event.controller;
 
+import com.yongyongthon.be.common.response.ErrorCode;
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.swagger.ApiErrorCodes;
 import com.yongyongthon.be.common.security.SecurityUtil;
 import com.yongyongthon.be.event.data.dto.FavoriteResponseDto;
 import com.yongyongthon.be.event.service.FavoriteService;
@@ -21,12 +23,14 @@ public class FavoriteController {
 
     @PutMapping("/{eventId}")
     @Operation(summary = "관심 행사 담기 (E19)")
+    @ApiErrorCodes({ErrorCode.VERIFICATION_INVALID, ErrorCode.EVENT_NOT_FOUND})
     public GlobalResponse<FavoriteResponseDto> addFavorite(@PathVariable String eventId) {
         return favoriteService.addFavorite(SecurityUtil.getUsername(), eventId);
     }
 
     @DeleteMapping("/{eventId}")
     @Operation(summary = "관심 행사 해제 (E20)")
+    @ApiErrorCodes({ErrorCode.VERIFICATION_INVALID, ErrorCode.EVENT_NOT_FOUND})
     public GlobalResponse<FavoriteResponseDto> removeFavorite(@PathVariable String eventId) {
         return favoriteService.removeFavorite(SecurityUtil.getUsername(), eventId);
     }
