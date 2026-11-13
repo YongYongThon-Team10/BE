@@ -42,15 +42,57 @@ final class SearchConditionRules {
         return ranges;
     }
 
-    /** 문장(공백 무시)에 들어 있는 첫 상대 날짜 표현의 기간. 없으면 null */
+    private static final String WEEKDAY_NAMES = "월화수목금토일";
+    private static final java.util.regex.Pattern WEEKDAY = java.util.regex.Pattern.compile("([월화수목금토일])요일");
+
+    /**
+     * 문장(공백 무시)에 들어 있는 상대 날짜의 기간. 없으면 null. 찾는 순서:
+     * 1. 요일 (토요일 등). "다음 주"(다음 주말 포함)가 있으면 다음 주의 그 요일, "이번 주"나 "금주"가 있으면 이번 주의 그 요일,
+     *    없으면 오늘을 포함해 가장 가까운 그 요일. 요일이 여럿이면 가장 이른 날부터 가장 늦은 날까지
+     * 2. 주말 표현 (다음 주말, 이번 주말, 주말)
+     * 3. 주 표현 (다음 주, 이번 주), 그다음 모레, 내일, 오늘
+     * 요일을 먼저 봐야 "다음 주 토요일"이 다음 주 전체로, "다음 주말 토요일"이 이틀로 바뀌지 않는다.
+     */
     static DateRange findRelativeDate(String query, LocalDate today) {
         String compact = query.replaceAll("\\s+", "");
-        for (Map.Entry<String, DateRange> entry : relativeDates(today).entrySet()) {
+        DateRange weekdays = weekdays(compact, today);
+        if (weekdays != null) {
+            return weekdays;
+        }
+
+        Map<String, DateRange> ranges = relativeDates(today);
+        for (String weekend : List.of("다음주말", "이번주말", "주말")) {
+            if (compact.contains(weekend)) {
+                return ranges.get(weekend);
+            }
+        }
+
+        for (Map.Entry<String, DateRange> entry : ranges.entrySet()) {
             if (compact.contains(entry.getKey())) {
                 return entry.getValue();
             }
         }
-        return null;
+        return compact.contains("금주") ? ranges.get("이번주") : null;
+    }
+
+    private static DateRange weekdays(String compact, LocalDate today) {
+        LocalDate thisMonday = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        LocalDate weekStart = compact.contains("다음주") ? thisMonday.plusDays(7)
+                : (compact.contains("이번주") || compact.contains("금주")) ? thisMonday
+                : null;
+
+        LocalDate from = null;
+        LocalDate to = null;
+        java.util.regex.Matcher m = WEEKDAY.matcher(compact);
+        while (m.find()) {
+            int day = WEEKDAY_NAMES.indexOf(m.group(1)) + 1;
+            LocalDate date = weekStart != null
+                    ? weekStart.plusDays(day - 1L)
+                    : today.plusDays((day - today.getDayOfWeek().getValue() + 7) % 7);
+            from = from == null || date.isBefore(from) ? date : from;
+            to = to == null || date.isAfter(to) ? date : to;
+        }
+        return from == null ? null : new DateRange(from, to);
     }
 
     /**
