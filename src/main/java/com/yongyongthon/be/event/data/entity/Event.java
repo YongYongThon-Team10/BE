@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 행사. 데이터는 scripts/seed_events.py가 엑셀에서 변환해 넣는다 (앱에서 쓰지 않음).
+ * 행사. 데이터는 scripts/seed_events.py가 팀 행사 DB(또는 엑셀)에서 변환해 넣는다 (앱은 읽기만 한다).
  * 엑셀에 없는 명세 필드(summary, themeLabel, imageUrl, indoorOutdoor, tags, notice)는 컬럼을 두지 않고
  * 응답에서 null 또는 빈 배열로 내보낸다. 데이터가 생기면 컬럼을 추가한다.
  */

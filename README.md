@@ -16,6 +16,16 @@ docker run -d --name be-redis -p 6379:6379 redis:7
 - 컴파일만 확인: `./gradlew compileJava`
 - `./gradlew build`는 `contextLoads` 테스트가 실제 MariaDB/Redis를 요구하므로 DB 없이는 실패한다. DB 없이 빌드하려면 `./gradlew build -x test`.
 
+### 행사 데이터 넣기
+
+앱은 MariaDB `events` 테이블만 읽는다. 처음 한 번(또는 행사 DB가 바뀌었을 때) 팀 행사 DB에서 옮겨 넣는다. 서버를 한 번 켜서 테이블이 만들어진 뒤에 한다.
+
+1. IAP 터널을 켠다: `gcloud compute start-iap-tunnel yongin-postgres 5432 --zone=us-central1-a --local-host-port=127.0.0.1:15432`
+2. SQL을 만든다 (접속 정보 파일은 저장소 밖에 둔다): `python3 scripts/seed_events.py --db --env-file <접속 정보 파일> > build/seed_events.sql`
+3. 넣는다: `docker exec -i be-mariadb mariadb -uroot -proot be < build/seed_events.sql`
+
+자세한 옵션(엑셀에서 넣기, 컬럼 확인)은 `scripts/seed_events.py` 맨 위 설명을 본다.
+
 ## 인증 API
 
 | Method | Path | 설명 | 인증 |

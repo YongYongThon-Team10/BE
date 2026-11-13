@@ -13,7 +13,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
- * 명세서01 기준 API(행사, 검색, 일정, 장소)의 요청 값 오류를 E4001로 응답한다.
+ * 명세서01 기준 API(행사, 검색, 일정, 장소, 내 코스)의 요청 값 오류를 E4001로 응답한다.
  * 인증 API는 이 핸들러 대상이 아니므로 기존 GlobalExceptionHandler의 C002를 그대로 쓴다.
  * 새 패키지가 같은 규칙을 따라야 하면 basePackages에 추가한다.
  */
@@ -23,7 +23,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
         "com.yongyongthon.be.event",
         "com.yongyongthon.be.search",
         "com.yongyongthon.be.itinerary",
-        "com.yongyongthon.be.place"
+        "com.yongyongthon.be.place",
+        "com.yongyongthon.be.course"
 })
 public class PublicApiExceptionHandler {
 
