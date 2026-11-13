@@ -1,16 +1,17 @@
 package com.yongyongthon.be.itinerary.service;
 
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.response.RequestValueInvalidException;
 import com.yongyongthon.be.common.util.Ids;
 import com.yongyongthon.be.course.data.repository.CourseRepository;
 import com.yongyongthon.be.event.data.dto.EventInfo;
 import com.yongyongthon.be.event.data.exception.EventNotFoundException;
-import com.yongyongthon.be.event.data.repository.EventRepository;
+import com.yongyongthon.be.event.service.EventCatalog;
+import com.yongyongthon.be.itinerary.data.dto.ItineraryCreateRequestDto;
 import com.yongyongthon.be.itinerary.data.dto.ItineraryRequestDto;
 import com.yongyongthon.be.itinerary.data.dto.ItineraryResponseDto;
 import com.yongyongthon.be.itinerary.data.dto.WarningResponseDto;
 import com.yongyongthon.be.itinerary.data.entity.Itinerary;
-import com.yongyongthon.be.itinerary.data.exception.InvalidItineraryRequestException;
 import com.yongyongthon.be.itinerary.data.exception.ItineraryNotFoundException;
 import com.yongyongthon.be.itinerary.data.repository.ItineraryRepository;
 import com.yongyongthon.be.itinerary.data.repository.SlotCandidateRepository;
@@ -20,7 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 일정 생성, 조회, 재추천 (지시서 7장 #1, #2, #9).
@@ -30,27 +33,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItineraryService {
 
+    private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
+
     private final ItineraryRepository itineraryRepository;
     private final CourseRepository courseRepository;
-    private final EventRepository eventRepository;
+    private final EventCatalog eventCatalog;
     private final ItineraryComposer composer;
     private final Recalculator recalculator;
     private final SlotCandidateRepository slotCandidateRepository;
+    private final ItineraryRequestValidator itineraryRequestValidator;
 
+    /**
+     * #1 생성. 요청 본문은 컨트롤러에서 @Valid로 검사하고(실패 시 E4001),
+     * 시간대 역전과 기준 행사 존재는 ItineraryRequestValidator가 검사한다 (E4001, E4041).
+     */
     @Transactional
-    public GlobalResponse<ItineraryResponseDto> createItinerary(ItineraryRequestDto request) {
-        ItineraryRequestValidator.validateCreate(request);
-        EventInfo base = eventRepository.findById(request.baseEventId())
-                .orElseThrow(EventNotFoundException::new);
-        LocalDate date = ItineraryRequestValidator.parseDate(request.date());
-        checkDateInEventPeriod(base, date);
+    public GlobalResponse<ItineraryResponseDto> createItinerary(ItineraryCreateRequestDto request) {
+        EventInfo base = EventInfo.from(itineraryRequestValidator.validate(request));
+        checkDateInEventPeriod(base, request.getDate());
 
         Itinerary it = new Itinerary(Ids.random("itn_", 8));
         it.setBaseEventId(base.eventId());
         it.setTitle(base.name() + " 중심 하루");
         it.setCoverImageUrl(base.thumbnailUrl());
         it.setBudget("any");
-        applyConditions(it, request);
+        applyConditions(it, toConditions(request));
 
         composer.compose(it, base);
         List<WarningResponseDto> warnings = recalculator.recalculate(it);
@@ -75,12 +82,12 @@ public class ItineraryService {
         ItineraryRequestDto req = request != null ? request
                 : new ItineraryRequestDto(null, null, null, null, null, null, null, null, null);
         if (req.baseEventId() != null && !req.baseEventId().equals(it.getBaseEventId())) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
-        ItineraryRequestValidator.validatePresent(req);
-        EventInfo base = eventRepository.findById(it.getBaseEventId())
+        ItineraryConditionValidator.validatePresent(req);
+        EventInfo base = eventCatalog.findById(it.getBaseEventId())
                 .orElseThrow(EventNotFoundException::new);
-        LocalDate date = req.date() != null ? ItineraryRequestValidator.parseDate(req.date()) : it.getDate();
+        LocalDate date = req.date() != null ? ItineraryConditionValidator.parseDate(req.date()) : it.getDate();
         checkDateInEventPeriod(base, date);
 
         applyConditions(it, req);
@@ -102,10 +109,26 @@ public class ItineraryService {
                 .orElseThrow(ItineraryNotFoundException::new);
     }
 
+    /** 생성 요청을 재추천과 같은 조건 모양으로 바꾼다. 시각은 HH:mm 문자열로 저장한다 */
+    static ItineraryRequestDto toConditions(ItineraryCreateRequestDto r) {
+        ItineraryCreateRequestDto.Origin o = r.getOrigin();
+        return new ItineraryRequestDto(
+                r.getBaseEventId(),
+                r.getDate().toString(),
+                new ItineraryRequestDto.Origin(o.getType(), o.getLat(), o.getLng(), o.getAddress()),
+                r.getTransport(),
+                new ItineraryRequestDto.TimeWindow(
+                        r.getTimeWindow().getStart().format(HH_MM), r.getTimeWindow().getEnd().format(HH_MM)),
+                r.getCompanion(),
+                r.getKidsAge(),
+                r.getBudget(),
+                r.getWants() == null ? null : r.getWants().stream().filter(Objects::nonNull).toList());
+    }
+
     /** 보낸 항목만 덮어쓴다 (생성은 필수값이 모두 있음) */
     static void applyConditions(Itinerary it, ItineraryRequestDto req) {
         if (req.date() != null) {
-            it.setDate(ItineraryRequestValidator.parseDate(req.date()));
+            it.setDate(ItineraryConditionValidator.parseDate(req.date()));
         }
         if (req.origin() != null) {
             it.setOriginType(req.origin().type());
@@ -138,7 +161,7 @@ public class ItineraryService {
     static void checkDateInEventPeriod(EventInfo base, LocalDate date) {
         if ((base.startDate() != null && date.isBefore(base.startDate()))
                 || (base.endDate() != null && date.isAfter(base.endDate()))) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.yongyongthon.be.course.service;
 
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.response.RequestValueInvalidException;
 import com.yongyongthon.be.course.data.dto.CourseDeleteResponseDto;
 import com.yongyongthon.be.course.data.dto.CourseListResponseDto;
 import com.yongyongthon.be.course.data.dto.CourseSaveRequestDto;
@@ -11,7 +12,6 @@ import com.yongyongthon.be.course.data.repository.CourseRepository;
 import com.yongyongthon.be.itinerary.data.entity.Itinerary;
 import com.yongyongthon.be.itinerary.data.entity.ItinerarySlot;
 import com.yongyongthon.be.itinerary.data.enums.SlotType;
-import com.yongyongthon.be.itinerary.data.exception.InvalidItineraryRequestException;
 import com.yongyongthon.be.itinerary.data.exception.ItineraryNotFoundException;
 import com.yongyongthon.be.itinerary.data.repository.ItineraryRepository;
 import com.yongyongthon.be.itinerary.service.SlotFactory;
@@ -52,11 +52,11 @@ public class CourseService {
     @Transactional
     public GlobalResponse<CourseSaveResponseDto> saveCourse(CourseSaveRequestDto req) {
         if (req == null || req.itineraryId() == null || req.itineraryId().isBlank()) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         String title = req.title() == null || req.title().isBlank() ? null : req.title().trim();
         if (title != null && title.length() > TITLE_MAX) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         Itinerary it = itineraryRepository.findById(req.itineraryId())
                 .orElseThrow(ItineraryNotFoundException::new);
@@ -89,7 +89,7 @@ public class CourseService {
         int p = page == null ? 0 : page;
         int s = size == null ? DEFAULT_SIZE : size;
         if (p < 0 || s < 1 || s > MAX_SIZE) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         Page<Course> result = courseRepository.findAll(
                 PageRequest.of(p, s, Sort.by(Sort.Order.desc("savedAt"), Sort.Order.desc("id"))));

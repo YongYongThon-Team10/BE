@@ -1,14 +1,14 @@
 package com.yongyongthon.be.course.service;
 
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.response.RequestValueInvalidException;
 import com.yongyongthon.be.course.data.dto.CalendarDateResponseDto;
 import com.yongyongthon.be.course.data.dto.CalendarMonthResponseDto;
 import com.yongyongthon.be.course.data.entity.Course;
 import com.yongyongthon.be.course.data.repository.CourseRepository;
 import com.yongyongthon.be.event.data.dto.EventInfo;
-import com.yongyongthon.be.event.data.repository.EventRepository;
+import com.yongyongthon.be.event.service.EventCatalog;
 import com.yongyongthon.be.itinerary.data.entity.Itinerary;
-import com.yongyongthon.be.itinerary.data.exception.InvalidItineraryRequestException;
 import com.yongyongthon.be.itinerary.data.repository.ItineraryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,13 +34,13 @@ public class CalendarService {
 
     private final CourseRepository courseRepository;
     private final ItineraryRepository itineraryRepository;
-    private final EventRepository eventRepository;
+    private final EventCatalog eventCatalog;
     private final InterestEventProvider interestEventProvider;
 
     @Transactional(readOnly = true)
     public GlobalResponse<?> getCalendar(String month, String date) {
         if ((month == null) == (date == null)) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         if (month != null) {
             return GlobalResponse.ok(byMonth(parseMonth(month)));
@@ -75,7 +75,7 @@ public class CalendarService {
     }
 
     private List<EventInfo> likedEvents(LocalDate from, LocalDate to) {
-        return eventRepository.findByIdsOverlapping(interestEventProvider.likedEventIds(), from, to);
+        return eventCatalog.findByIdsOverlapping(interestEventProvider.likedEventIds(), from, to);
     }
 
     private record CourseWithItinerary(Course course, Itinerary itinerary) {
@@ -101,23 +101,23 @@ public class CalendarService {
 
     private static YearMonth parseMonth(String text) {
         if (!text.matches("\\d{4}-\\d{2}")) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         try {
             return YearMonth.parse(text);
         } catch (DateTimeParseException e) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
     }
 
     private static LocalDate parseDate(String text) {
         if (!text.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         try {
             return LocalDate.parse(text);
         } catch (DateTimeParseException e) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
     }
 }

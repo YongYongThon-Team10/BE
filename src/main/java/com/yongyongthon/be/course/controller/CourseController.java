@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  * "me"는 서버에 하나뿐인 데모 사용자다. 인증 헤더를 읽지 않는다.
  */
 @RestController
-@RequestMapping("/api/v1/me")
+@RequestMapping("/api/me")
 @RequiredArgsConstructor
 public class CourseController {
     private final CourseService courseService;
@@ -37,7 +37,7 @@ public class CourseController {
 
     @PostMapping("/courses")
     @Operation(summary = "내 코스에 저장")
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST, ErrorCode.ITINERARY_NOT_FOUND})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.ITINERARY_NOT_FOUND})
     public GlobalResponse<CourseSaveResponseDto> saveCourse(
             @RequestBody(required = false) CourseSaveRequestDto request) {
         return courseService.saveCourse(request);
@@ -45,7 +45,7 @@ public class CourseController {
 
     @GetMapping("/courses")
     @Operation(summary = "저장한 코스 목록")
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID})
     public GlobalResponse<CourseListResponseDto> getCourses(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
@@ -64,7 +64,7 @@ public class CourseController {
     @ApiResponse(responseCode = "200", description = "month 조회면 MonthResponse, date 조회면 DateResponse 모양",
             content = @Content(mediaType = "application/json", schema = @Schema(oneOf = {
                     CalendarResponseDocs.MonthResponse.class, CalendarResponseDocs.DateResponse.class})))
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID})
     public GlobalResponse<?> getCalendar(
             @RequestParam(required = false) String month,
             @RequestParam(required = false) String date) {

@@ -1,4 +1,4 @@
-# S5, S6 일정 API 테스트용. MariaDB 대신 H2 메모리 DB, 행사 데이터는 테스트용 JSON
+# S5, S6 일정 API 테스트용. MariaDB 대신 H2 메모리 DB. 행사는 테스트가 events 테이블에 직접 넣는다 (support/TestEvents)
 spring:
   datasource:
     url: jdbc:h2:mem:itinerary-test;MODE=MariaDB;DB_CLOSE_DELAY=-1;NON_KEYWORDS=USER,VALUE
@@ -10,8 +10,3 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
-app:
-  event-data:
-    # .env에 EVENT_DATA_SOURCE=postgres가 있어도 테스트는 항상 테스트용 JSON을 쓴다
-    source: json
-    events-path: classpath:data/events_test.json

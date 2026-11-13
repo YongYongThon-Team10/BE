@@ -1,5 +1,6 @@
 package com.yongyongthon.be.support;
 
+import com.yongyongthon.be.event.data.repository.EventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,22 +21,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 /**
- * 일정 API 통합 테스트 공통. local 설정 위에 test 프로필(H2, 테스트 행사 JSON)을 얹는다.
- * MariaDB, Redis 없이 돈다.
+ * 일정 API 통합 테스트 공통. local 설정 위에 test 프로필(H2 메모리 DB)을 얹는다.
+ * 행사는 테스트마다 TestEvents를 events 테이블에 넣는다. MariaDB, Redis 없이 돈다.
  */
 @SpringBootTest
 @ActiveProfiles({"local", "test"})
 public abstract class ApiTestSupport {
 
-    protected static final String ITINERARIES = "/api/v1/itineraries";
+    protected static final String ITINERARIES = "/api/itineraries";
 
     @Autowired
     private WebApplicationContext context;
+
+    @Autowired
+    private EventRepository eventRepository;
 
     protected MockMvc mvc;
 
     @BeforeEach
     void setUpMockMvc() {
+        eventRepository.saveAll(TestEvents.all());
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 

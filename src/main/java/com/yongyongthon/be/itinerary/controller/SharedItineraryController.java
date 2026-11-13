@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 공유 일정 미리보기 (S5 #11). 읽기 전용.
  */
 @RestController
-@RequestMapping("/api/v1/shared")
+@RequestMapping("/api/shared")
 @RequiredArgsConstructor
 public class SharedItineraryController {
     private final ItineraryShareService itineraryShareService;

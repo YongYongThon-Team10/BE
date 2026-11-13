@@ -35,7 +35,7 @@ class ItineraryCreateApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.slots[0].timeBasis").value("official"))
                 .andExpect(jsonPath("$.data.slots[0].costAmount").value(0))
                 .andExpect(jsonPath("$.data.slots[0].costText").value("무료"))
-                .andExpect(jsonPath("$.data.slots[0].description").value("호숫가 마켓"))
+                .andExpect(jsonPath("$.data.slots[0].description").value(nullValue()))
                 .andExpect(jsonPath("$.data.slots[0].moveFromPrev.isEstimate").value(true))
                 .andExpect(jsonPath("$.data.slots[1].type").value("meal"))
                 .andExpect(jsonPath("$.data.slots[1].title").value("식사"))
@@ -111,44 +111,75 @@ class ItineraryCreateApiTest extends ApiTestSupport {
         postJson(ITINERARIES, body)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slots[2].eventId").value("T-NEAR3"))
-                .andExpect(jsonPath("$.data.slots[2].durationMin").value(90));
+                .andExpect(jsonPath("$.data.slots[2].durationMin").value(60));
     }
 
     @Test
-    void 종료가_시작보다_빠르면_C001() throws Exception {
+    void 종료가_시작보다_빠르면_E4001() throws Exception {
         postJson(ITINERARIES, createBody("T-BASE", "2026-11-14", "18:00", "10:00"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data").value(nullValue()))
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
-    void 출발지_좌표_누락은_C001() throws Exception {
+    void 출발지_좌표_누락은_E4001() throws Exception {
         String body = createBody("T-BASE", "2026-11-14", "10:00", "18:00").replace("\"lat\": 37.2756, ", "");
         postJson(ITINERARIES, body)
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
-    void 잘못된_JSON은_C001() throws Exception {
+    void 잘못된_JSON은_E4001() throws Exception {
         postJson(ITINERARIES, "{not json")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
-    void 날짜가_기준_행사_기간_밖이면_C001() throws Exception {
+    void 본문이_없으면_E4001() throws Exception {
+        postJson(ITINERARIES, "")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("E4001"));
+    }
+
+    @Test
+    void 시각_형식이_HH_mm이_아니면_E4001() throws Exception {
+        postJson(ITINERARIES, createBody("T-BASE", "2026-11-14", "9:00", "18:00"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("E4001"));
+    }
+
+    @Test
+    void 허용하지_않는_값은_E4001() throws Exception {
+        String body = createBody("T-BASE", "2026-11-14", "10:00", "18:00");
+        postJson(ITINERARIES, body.replace("\"car\"", "\"bike\""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("E4001"));
+        postJson(ITINERARIES, body.replace("\"kids\"", "\"pets\""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("E4001"));
+        postJson(ITINERARIES, body.replace("[\"food\"]", "[\"shopping\"]"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("E4001"));
+        postJson(ITINERARIES, body.replace("2026-11-14", "2026-11-31"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("E4001"));
+    }
+
+    @Test
+    void 날짜가_기준_행사_기간_밖이면_E4001() throws Exception {
         postJson(ITINERARIES, createBody("T-BASE", "2026-12-14", "10:00", "18:00"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
-    void 없는_기준_행사는_404_C4042() throws Exception {
+    void 없는_기준_행사는_404_E4041() throws Exception {
         postJson(ITINERARIES, createBody("NO-SUCH", "2026-11-14", "10:00", "18:00"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4042"))
+                .andExpect(jsonPath("$.error.code").value("E4041"))
                 .andExpect(jsonPath("$.error.message").value("행사를 찾을 수 없습니다."));
     }
 
@@ -169,10 +200,10 @@ class ItineraryCreateApiTest extends ApiTestSupport {
     }
 
     @Test
-    void 없는_일정은_404_C4043() throws Exception {
+    void 없는_일정은_404_E4042() throws Exception {
         getUrl(ITINERARIES + "/itn_nope")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
     }
 
     @Test

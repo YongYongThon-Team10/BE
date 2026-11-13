@@ -51,29 +51,29 @@ class SmokeFlowTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.slots[4].type").value("return"));
 
         // 6. 코스 저장
-        String saved = postJson("/api/v1/me/courses", "{\"itineraryId\": \"" + id + "\"}")
+        String saved = postJson("/api/me/courses", "{\"itineraryId\": \"" + id + "\"}")
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         String courseId = JsonPath.read(saved, "$.data.courseId");
 
         // 7. 목록에 있음
-        getUrl("/api/v1/me/courses")
+        getUrl("/api/me/courses")
                 .andExpect(jsonPath("$.data.courses[0].courseId").value(courseId))
                 .andExpect(jsonPath("$.data.courses[0].mealSummary").value("산책길 브런치"));
 
         // 8. 캘린더에 있음
-        getUrl("/api/v1/me/calendar?month=2026-11")
+        getUrl("/api/me/calendar?month=2026-11")
                 .andExpect(jsonPath("$.data.courses[0].itineraryId").value(id));
 
         // 9. 공유 링크와 미리보기
         String share = postJson(base + "/share", "").andReturn().getResponse().getContentAsString();
         String shareId = JsonPath.read(share, "$.data.shareId");
-        getUrl("/api/v1/shared/" + shareId)
+        getUrl("/api/shared/" + shareId)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slotCount").value(5));
 
         // 10. 코스 삭제 후 목록이 비어 있음
-        deleteUrl("/api/v1/me/courses/" + courseId).andExpect(status().isOk());
-        getUrl("/api/v1/me/courses").andExpect(jsonPath("$.data.courses", hasSize(0)));
+        deleteUrl("/api/me/courses/" + courseId).andExpect(status().isOk());
+        getUrl("/api/me/courses").andExpect(jsonPath("$.data.courses", hasSize(0)));
     }
 }

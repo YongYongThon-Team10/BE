@@ -39,14 +39,14 @@ class ItineraryRegenerateShareApiTest extends ApiTestSupport {
         String regen = ITINERARIES + "/" + id + "/regenerate";
         postJson(regen, "{\"baseEventId\": \"T-NEAR1\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(regen, "{\"timeWindow\": {\"start\": \"18:00\", \"end\": \"10:00\"}}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(regen, "{\"date\": \"2026-12-25\"}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(ITINERARIES + "/itn_nope/regenerate", "{}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
         getUrl(ITINERARIES + "/" + id)
                 .andExpect(jsonPath("$.data.slots[0].slotId").value("slt_1"))
                 .andExpect(jsonPath("$.data.transport").value("car"));
@@ -76,7 +76,7 @@ class ItineraryRegenerateShareApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.shareId").value(shareId));
         postJson(ITINERARIES + "/itn_nope/share", "")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
     }
 
     @Test
@@ -85,7 +85,7 @@ class ItineraryRegenerateShareApiTest extends ApiTestSupport {
         String share = postJson(ITINERARIES + "/" + id + "/share", "").andReturn().getResponse().getContentAsString();
         String shareId = JsonPath.read(share, "$.data.shareId");
 
-        String json = getUrl("/api/v1/shared/" + shareId)
+        String json = getUrl("/api/shared/" + shareId)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.shareId").value(shareId))
                 .andExpect(jsonPath("$.data.date").value("2026-11-14"))
@@ -103,8 +103,8 @@ class ItineraryRegenerateShareApiTest extends ApiTestSupport {
                 .andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat(json).doesNotContain("기흥역").doesNotContain("127.1163");
 
-        getUrl("/api/v1/shared/shr_nope")
+        getUrl("/api/shared/shr_nope")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4045"));
+                .andExpect(jsonPath("$.error.code").value("E4044"));
     }
 }

@@ -16,12 +16,12 @@ class SwaggerDocsTest extends ApiTestSupport {
     void 오류_응답과_캘린더_응답_모양이_문서에_있다() throws Exception {
         getUrl("/v3/api-docs")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paths['/api/v1/itineraries/{itineraryId}'].get.responses['404']"
-                        + ".content['application/json'].examples.C4043").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/itineraries/{itineraryId}'].get.responses['500']").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/itineraries/{itineraryId}/slots/{slotId}'].delete.responses['400']"
-                        + ".content['application/json'].examples.C4001").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/me/calendar'].get.responses['200']"
+                .andExpect(jsonPath("$.paths['/api/itineraries/{itineraryId}'].get.responses['404']"
+                        + ".content['application/json'].examples.E4042").exists())
+                .andExpect(jsonPath("$.paths['/api/itineraries/{itineraryId}'].get.responses['500']").exists())
+                .andExpect(jsonPath("$.paths['/api/itineraries/{itineraryId}/slots/{slotId}'].delete.responses['400']"
+                        + ".content['application/json'].examples.E4003").exists())
+                .andExpect(jsonPath("$.paths['/api/me/calendar'].get.responses['200']"
                         + ".content['application/json'].schema.oneOf", hasSize(2)));
     }
 }

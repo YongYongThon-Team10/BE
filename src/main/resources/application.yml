@@ -18,14 +18,20 @@ jwt:
   refresh-token:
     expire-time: ${JWT_REFRESH_TOKEN_EXPIRE_TIME:604800000}
 
+# E4 자연어 검색 조건 변환. 키가 없으면 E4는 502 E5021로 응답한다 (부팅은 된다)
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-4o-mini}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+
+ai:
+  search-parse-timeout-seconds: ${AI_SEARCH_PARSE_TIMEOUT_SECONDS:15}
+
+# E14 출발지 장소 검색. 키가 없으면 E14는 502 E5022로 응답한다 (부팅은 된다)
+kakao:
+  rest-api-key: ${KAKAO_REST_API_KEY:}
+  local-base-url: ${KAKAO_LOCAL_BASE_URL:https://dapi.kakao.com}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-
-# S5, S6 행사 데이터 출처. json(기본, 엑셀 변환 파일) 또는 postgres(팀 행사 DB, GCP IAP 터널 필요)
-app:
-  event-data:
-    source: ${EVENT_DATA_SOURCE:json}
-    db-url: ${EVENT_DB_URL:jdbc:postgresql://127.0.0.1:15432/yongin_events?sslmode=require}
-    db-username: ${EVENT_DB_USERNAME:yongin_reader}
-    db-password: ${EVENT_DB_PASSWORD:}

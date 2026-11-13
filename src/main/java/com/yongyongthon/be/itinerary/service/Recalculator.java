@@ -4,7 +4,7 @@ import com.yongyongthon.be.common.config.AppProperties;
 import com.yongyongthon.be.common.util.Geo;
 import com.yongyongthon.be.common.util.Times;
 import com.yongyongthon.be.event.data.dto.EventInfo;
-import com.yongyongthon.be.event.data.repository.EventRepository;
+import com.yongyongthon.be.event.service.EventCatalog;
 import com.yongyongthon.be.itinerary.data.dto.WarningResponseDto;
 import com.yongyongthon.be.itinerary.data.entity.Itinerary;
 import com.yongyongthon.be.itinerary.data.entity.ItinerarySlot;
@@ -32,7 +32,7 @@ public class Recalculator {
     private static final String ORIGIN_LINK_NAME = "출발지";
     private static final String KAKAO_LINK = "https://map.kakao.com/link/to/";
 
-    private final EventRepository eventRepository;
+    private final EventCatalog eventCatalog;
     private final AppProperties props;
 
     public List<WarningResponseDto> recalculate(Itinerary it) {
@@ -41,7 +41,7 @@ public class Recalculator {
         int cursor = Times.toMinutes(it.getWindowStart());
         double prevLat = it.getOriginLat();
         double prevLng = it.getOriginLng();
-        int[] baseRange = eventRepository.findById(it.getBaseEventId())
+        int[] baseRange = eventCatalog.findById(it.getBaseEventId())
                 .map(e -> Times.parseRange(e.time()))
                 .orElse(null);
 
@@ -103,7 +103,7 @@ public class Recalculator {
             s.setTimeBasis(official ? ItinerarySlot.OFFICIAL : ItinerarySlot.SUGGESTED);
 
             if (SlotType.FROM_EVENT_DB.contains(s.getType()) && s.getEventId() != null) {
-                Optional<EventInfo> source = eventRepository.findById(s.getEventId());
+                Optional<EventInfo> source = eventCatalog.findById(s.getEventId());
                 if (source.isPresent() && source.get().time() == null) {
                     timeUnknown.add(WarningResponseDto.timeUnknown(s.getSlotId()));
                 }

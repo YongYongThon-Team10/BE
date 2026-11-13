@@ -1,10 +1,11 @@
 package com.yongyongthon.be.itinerary.service;
 
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.response.RequestValueInvalidException;
 import com.yongyongthon.be.event.data.dto.EventInfo;
 import com.yongyongthon.be.event.data.dto.EventProgram;
 import com.yongyongthon.be.event.data.exception.EventNotFoundException;
-import com.yongyongthon.be.event.data.repository.EventRepository;
+import com.yongyongthon.be.event.service.EventCatalog;
 import com.yongyongthon.be.itinerary.data.dto.ItineraryResponseDto;
 import com.yongyongthon.be.itinerary.data.dto.SlotAddRequestDto;
 import com.yongyongthon.be.itinerary.data.dto.SlotOrderRequestDto;
@@ -13,7 +14,6 @@ import com.yongyongthon.be.itinerary.data.entity.Itinerary;
 import com.yongyongthon.be.itinerary.data.entity.ItinerarySlot;
 import com.yongyongthon.be.itinerary.data.entity.SlotCandidate;
 import com.yongyongthon.be.itinerary.data.enums.SlotType;
-import com.yongyongthon.be.itinerary.data.exception.InvalidItineraryRequestException;
 import com.yongyongthon.be.itinerary.data.exception.SlotNotDeletableException;
 import com.yongyongthon.be.itinerary.data.exception.SlotNotFoundException;
 import com.yongyongthon.be.itinerary.data.repository.SlotCandidateRepository;
@@ -42,7 +42,7 @@ public class ItinerarySlotService {
     private static final int DURATION_MAX = 300;
 
     private final ItineraryService itineraryService;
-    private final EventRepository eventRepository;
+    private final EventCatalog eventCatalog;
     private final SlotCandidateRepository slotCandidateRepository;
     private final SlotFactory slotFactory;
 
@@ -70,16 +70,16 @@ public class ItinerarySlotService {
         ItinerarySlot slot = new ItinerarySlot(null, req.type());
         switch (req.type()) {
             case SlotType.NEARBY_EVENT -> {
-                EventInfo event = eventRepository.findById(req.eventId()).orElseThrow(EventNotFoundException::new);
+                EventInfo event = eventCatalog.findById(req.eventId()).orElseThrow(EventNotFoundException::new);
                 slotFactory.fillFromEvent(slot, event, SlotType.NEARBY_EVENT);
                 slot.setUserAdded(true);
             }
             case SlotType.PROGRAM -> {
-                EventInfo event = eventRepository.findById(req.eventId()).orElseThrow(EventNotFoundException::new);
-                EventProgram program = eventRepository.findPrograms(event.eventId()).stream()
+                EventInfo event = eventCatalog.findById(req.eventId()).orElseThrow(EventNotFoundException::new);
+                EventProgram program = eventCatalog.findPrograms(event.eventId()).stream()
                         .filter(p -> req.programId().equals(p.programId()))
                         .findFirst()
-                        .orElseThrow(InvalidItineraryRequestException::new);
+                        .orElseThrow(RequestValueInvalidException::new);
                 slotFactory.fillFromProgram(slot, event, program);
                 slot.setUserAdded(true);
             }
@@ -117,13 +117,13 @@ public class ItinerarySlotService {
         boolean byCandidate = req != null && req.replaceWithCandidateId() != null;
         boolean byEvent = req != null && req.replaceWithEventId() != null;
         if (byCandidate == byEvent) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         Itinerary it = itineraryService.getItineraryEntity(itineraryId);
         ItinerarySlot slot = getSlotEntity(it, slotId);
         String type = slot.getType();
         if (SlotType.EVENT.equals(type) || SlotType.RETURN.equals(type)) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         boolean mealSlot = SlotType.MEAL.equals(type);
 
@@ -131,26 +131,26 @@ public class ItinerarySlotService {
             String candidateId = req.replaceWithCandidateId();
             if (MealSamples.isMealCandidateId(candidateId)) {
                 if (!mealSlot) {
-                    throw new InvalidItineraryRequestException();
+                    throw new RequestValueInvalidException();
                 }
                 MealSamples.MealSample sample = MealSamples.find(candidateId).orElseThrow(SlotNotFoundException::new);
                 slotFactory.fillMealSample(slot, sample);
             } else {
                 if (mealSlot) {
-                    throw new InvalidItineraryRequestException();
+                    throw new RequestValueInvalidException();
                 }
                 SlotCandidate candidate = slotCandidateRepository
                         .findByItineraryIdAndSlotIdAndCandidateId(itineraryId, slotId, candidateId)
                         .orElseThrow(SlotNotFoundException::new);
-                EventInfo event = eventRepository.findById(candidate.getEventId())
+                EventInfo event = eventCatalog.findById(candidate.getEventId())
                         .orElseThrow(EventNotFoundException::new);
                 slotFactory.fillFromEvent(slot, event, SlotType.NEARBY_EVENT);
             }
         } else {
             if (mealSlot) {
-                throw new InvalidItineraryRequestException();
+                throw new RequestValueInvalidException();
             }
-            EventInfo event = eventRepository.findById(req.replaceWithEventId())
+            EventInfo event = eventCatalog.findById(req.replaceWithEventId())
                     .orElseThrow(EventNotFoundException::new);
             slotFactory.fillFromEvent(slot, event, SlotType.NEARBY_EVENT);
         }
@@ -165,7 +165,7 @@ public class ItinerarySlotService {
     public GlobalResponse<ItineraryResponseDto> reorderSlots(String itineraryId, SlotOrderRequestDto req) {
         Itinerary it = itineraryService.getItineraryEntity(itineraryId);
         if (req == null || req.slotIds() == null) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         List<ItinerarySlot> movable = it.orderedSlots().stream()
                 .filter(s -> !SlotType.RETURN.equals(s.getType()))
@@ -175,7 +175,7 @@ public class ItinerarySlotService {
         Set<String> existing = new HashSet<>();
         movable.forEach(s -> existing.add(s.getSlotId()));
         if (ids.size() != movable.size() || unique.size() != ids.size() || !unique.equals(existing)) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         for (int i = 0; i < ids.size(); i++) {
             getSlotEntity(it, ids.get(i)).setSlotOrder(i + 1);
@@ -213,10 +213,10 @@ public class ItinerarySlotService {
 
     private static void validateAdd(SlotAddRequestDto req) {
         if (req == null || req.type() == null || !ADDABLE_TYPES.contains(req.type())) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         if (req.durationMin() != null && (req.durationMin() < DURATION_MIN || req.durationMin() > DURATION_MAX)) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         switch (req.type()) {
             case SlotType.NEARBY_EVENT -> requireText(req.eventId());
@@ -227,7 +227,7 @@ public class ItinerarySlotService {
             default -> {
                 requireText(req.title());
                 if (req.title().trim().length() > TITLE_MAX) {
-                    throw new InvalidItineraryRequestException();
+                    throw new RequestValueInvalidException();
                 }
             }
         }
@@ -235,7 +235,7 @@ public class ItinerarySlotService {
 
     private static void requireText(String value) {
         if (value == null || value.isBlank()) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
     }
 }

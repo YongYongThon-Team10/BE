@@ -57,7 +57,7 @@ class ItinerarySlotApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.slots", hasSize(6)))
                 .andExpect(jsonPath("$.data.slots[1].eventId").value("T-NEAR3"))
                 .andExpect(jsonPath("$.data.slots[1].order").value(2))
-                .andExpect(jsonPath("$.data.slots[1].durationMin").value(90))
+                .andExpect(jsonPath("$.data.slots[1].durationMin").value(60))
                 .andExpect(jsonPath("$.data.slots[1].isUserAdded").value(true))
                 .andExpect(jsonPath("$.data.slots[2].type").value("meal"))
                 .andExpect(jsonPath("$.data.slots[2].order").value(3))
@@ -93,51 +93,51 @@ class ItinerarySlotApiTest extends ApiTestSupport {
     }
 
     @Test
-    void 머무는_시간_범위_오류는_C001() throws Exception {
+    void 머무는_시간_범위_오류는_E4001() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
         postJson(slots(id), "{\"type\": \"custom\", \"title\": \"a\", \"durationMin\": 0}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(slots(id), "{\"type\": \"custom\", \"title\": \"a\", \"durationMin\": 301}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
     void 추가_요청_오류() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
         postJson(slots(id), "{\"title\": \"a\"}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(slots(id), "{\"type\": \"return\"}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(slots(id), "{\"type\": \"nearbyEvent\"}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(slots(id), "{\"type\": \"custom\", \"title\": \"" + "가".repeat(51) + "\"}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(slots(id), "{\"type\": \"program\", \"eventId\": \"T-BASE\", \"programId\": \"p1\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(slots(id), "{\"type\": \"nearbyEvent\", \"eventId\": \"NO-SUCH\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4042"));
+                .andExpect(jsonPath("$.error.code").value("E4041"));
         postJson(slots(id), "{\"type\": \"custom\", \"title\": \"a\", \"afterSlotId\": \"slt_99\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4044"));
+                .andExpect(jsonPath("$.error.code").value("E4043"));
         postJson(slots("itn_nope"), "{\"type\": \"custom\", \"title\": \"a\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
     }
 
     @Test
-    void 기준_행사와_귀가_슬롯은_삭제_불가_C4001() throws Exception {
+    void 기준_행사와_귀가_슬롯은_삭제_불가_E4003() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
         deleteUrl(slots(id) + "/slt_1")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C4001"))
+                .andExpect(jsonPath("$.error.code").value("E4003"))
                 .andExpect(jsonPath("$.error.message").value("삭제할 수 없는 항목입니다."));
         deleteUrl(slots(id) + "/slt_5")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C4001"));
+                .andExpect(jsonPath("$.error.code").value("E4003"));
     }
 
     @Test
@@ -152,7 +152,7 @@ class ItinerarySlotApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.warnings", hasSize(0)));
         deleteUrl(slots(id) + "/slt_99")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4044"));
+                .andExpect(jsonPath("$.error.code").value("E4043"));
     }
 
     @Test
@@ -160,10 +160,10 @@ class ItinerarySlotApiTest extends ApiTestSupport {
         String id = createItinerary("T-BASE", "2026-11-14");
         putJson(slots(id) + "/slt_3", "{\"replaceWithCandidateId\": \"cnd_1\", \"replaceWithEventId\": \"T-NEAR3\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         putJson(slots(id) + "/slt_3", "{}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
@@ -171,10 +171,10 @@ class ItinerarySlotApiTest extends ApiTestSupport {
         String id = createItinerary("T-BASE", "2026-11-14");
         putJson(slots(id) + "/slt_5", "{\"replaceWithEventId\": \"T-NEAR3\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         putJson(slots(id) + "/slt_1", "{\"replaceWithEventId\": \"T-NEAR3\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
@@ -194,28 +194,28 @@ class ItinerarySlotApiTest extends ApiTestSupport {
     }
 
     @Test
-    void 슬롯_종류와_후보_종류가_다르면_C001() throws Exception {
+    void 슬롯_종류와_후보_종류가_다르면_E4001() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
         putJson(slots(id) + "/slt_3", "{\"replaceWithCandidateId\": \"cnd_m1\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         putJson(slots(id) + "/slt_2", "{\"replaceWithCandidateId\": \"cnd_1\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         putJson(slots(id) + "/slt_2", "{\"replaceWithEventId\": \"T-NEAR3\"}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
-    void 모르는_후보는_404_C4044() throws Exception {
+    void 모르는_후보는_404_E4043() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
         putJson(slots(id) + "/slt_3", "{\"replaceWithCandidateId\": \"cnd_99\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4044"));
+                .andExpect(jsonPath("$.error.code").value("E4043"));
         putJson(slots(id) + "/slt_2", "{\"replaceWithCandidateId\": \"cnd_m9\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4044"));
+                .andExpect(jsonPath("$.error.code").value("E4043"));
     }
 
     @Test
@@ -230,7 +230,7 @@ class ItinerarySlotApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.totalCost").value(0));
         putJson(slots(id) + "/slt_3", "{\"replaceWithEventId\": \"NO-SUCH\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4042"));
+                .andExpect(jsonPath("$.error.code").value("E4041"));
     }
 
     @Test
@@ -239,15 +239,15 @@ class ItinerarySlotApiTest extends ApiTestSupport {
         String url = slots(id) + "/order";
         patchJson(url, "{\"slotIds\": [\"slt_1\", \"slt_2\", \"slt_3\", \"slt_4\", \"slt_5\"]}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         patchJson(url, "{\"slotIds\": [\"slt_1\", \"slt_2\", \"slt_3\"]}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         patchJson(url, "{\"slotIds\": [\"slt_1\", \"slt_2\", \"slt_3\", \"slt_3\"]}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         patchJson(url, "{\"slotIds\": [\"slt_1\", \"slt_2\", \"slt_3\", \"slt_9\"]}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         patchJson(url, "{}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test

@@ -18,8 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class CourseCalendarApiTest extends ApiTestSupport {
 
-    private static final String COURSES = "/api/v1/me/courses";
-    private static final String CALENDAR = "/api/v1/me/calendar";
+    private static final String COURSES = "/api/me/courses";
+    private static final String CALENDAR = "/api/me/calendar";
 
     @Autowired
     CourseRepository courseRepository;
@@ -58,7 +58,7 @@ class CourseCalendarApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.title").value("아이랑 호수공원"));
 
-        getUrl("/api/v1/itineraries/" + id).andExpect(jsonPath("$.data.isSaved").value(true));
+        getUrl("/api/itineraries/" + id).andExpect(jsonPath("$.data.isSaved").value(true));
         getUrl(COURSES).andExpect(jsonPath("$.data.totalCount").value(1));
     }
 
@@ -67,18 +67,18 @@ class CourseCalendarApiTest extends ApiTestSupport {
         String id = createItinerary("T-BASE", "2026-11-14");
         postJson(COURSES, "{}")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(COURSES, "{\"itineraryId\": \"" + id + "\", \"title\": \"" + "가".repeat(41) + "\"}")
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
         postJson(COURSES, "{\"itineraryId\": \"itn_nope\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
     }
 
     @Test
     void 코스_목록_필드() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
-        putJson("/api/v1/itineraries/" + id + "/slots/slt_2", "{\"replaceWithCandidateId\": \"cnd_m3\"}");
+        putJson("/api/itineraries/" + id + "/slots/slt_2", "{\"replaceWithCandidateId\": \"cnd_m3\"}");
         postJson(COURSES, "{\"itineraryId\": \"" + id + "\"}");
 
         getUrl(COURSES)
@@ -112,8 +112,8 @@ class CourseCalendarApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.totalCount").value(2))
                 .andExpect(jsonPath("$.data.courses", hasSize(1)))
                 .andExpect(jsonPath("$.data.courses[0].itineraryId").value(a));
-        getUrl(COURSES + "?page=-1").andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(COURSES + "?size=0").andExpect(jsonPath("$.error.code").value("C001"));
+        getUrl(COURSES + "?page=-1").andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(COURSES + "?size=0").andExpect(jsonPath("$.error.code").value("E4001"));
     }
 
     @Test
@@ -127,16 +127,16 @@ class CourseCalendarApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.deleted").value(true));
         getUrl(COURSES).andExpect(jsonPath("$.data.totalCount").value(0));
-        getUrl("/api/v1/itineraries/" + id)
+        getUrl("/api/itineraries/" + id)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.isSaved").value(false));
 
         deleteUrl(COURSES + "/" + courseId)
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
         deleteUrl(COURSES + "/nope")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
 
         String again = postJson(COURSES, "{\"itineraryId\": \"" + id + "\"}").andReturn().getResponse().getContentAsString();
         org.assertj.core.api.Assertions.assertThat((String) JsonPath.read(again, "$.data.courseId")).isNotEqualTo(courseId);
@@ -170,9 +170,9 @@ class CourseCalendarApiTest extends ApiTestSupport {
     void 캘린더는_month와_date_중_하나만() throws Exception {
         getUrl(CALENDAR + "?month=2026-11&date=2026-11-14")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(CALENDAR).andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(CALENDAR + "?month=2026-13").andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(CALENDAR + "?date=2026/11/14").andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(CALENDAR).andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(CALENDAR + "?month=2026-13").andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(CALENDAR + "?date=2026/11/14").andExpect(jsonPath("$.error.code").value("E4001"));
     }
 }

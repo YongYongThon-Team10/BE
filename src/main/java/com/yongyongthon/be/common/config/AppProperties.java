@@ -46,32 +46,13 @@ public class AppProperties {
     @Value("${app.default-duration-min.custom:30}")
     private int customDurationMin;
 
-    /** 근처 행사 후보에서 뺄 분류 (콤마 구분). 수강 신청이 필요한 강좌라 바로 가는 행사로 맞지 않음 */
+    /** 근처 행사 후보에서 뺄 세부 분류(events.sub_category, 콤마 구분). 수강 신청이 필요한 강좌라 바로 가는 행사로 맞지 않음 */
     @Value("${app.nearby-excluded-categories:도서관 프로그램}")
     private String nearbyExcludedCategories;
 
     /** 이름에 이 단어가 있으면 근처 행사 후보에서 뺀다 (콤마 구분). 예: 회원 모집 공지 */
     @Value("${app.nearby-excluded-keywords:모집}")
     private String nearbyExcludedKeywords;
-
-    /** 행사 데이터 출처: json(엑셀 변환 파일) 또는 postgres(팀 행사 DB) */
-    @Value("${app.event-data.source:json}")
-    private String eventSource;
-
-    /** 행사 DB 접속 정보 (postgres 모드). 비밀번호는 환경변수 EVENT_DB_PASSWORD로만 받는다 */
-    @Value("${app.event-data.db-url:jdbc:postgresql://127.0.0.1:15432/yongin_events?sslmode=require}")
-    private String eventDbUrl;
-
-    @Value("${app.event-data.db-username:yongin_reader}")
-    private String eventDbUsername;
-
-    @lombok.Getter(lombok.AccessLevel.NONE)
-    @Value("${app.event-data.db-password:}")
-    private String eventDbPassword;
-
-    /** 행사 데이터 JSON 위치 (지시서 8장) */
-    @Value("${app.event-data.events-path:classpath:data/events_all.json}")
-    private String eventsPath;
 
     public java.util.List<String> nearbyExcludedCategoryList() {
         return splitCsv(nearbyExcludedCategories);
@@ -89,11 +70,6 @@ public class AppProperties {
                 .map(String::trim)
                 .filter(v -> !v.isEmpty())
                 .toList();
-    }
-
-    /** toString 등으로 새지 않게 getter를 따로 둔다 */
-    public String eventDbPassword() {
-        return eventDbPassword;
     }
 
     public double speedOf(String transport) {

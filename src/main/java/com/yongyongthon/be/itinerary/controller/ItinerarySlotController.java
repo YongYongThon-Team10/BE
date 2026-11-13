@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 수정 API의 응답은 재계산된 일정 전체.
  */
 @RestController
-@RequestMapping("/api/v1/itineraries/{itineraryId}/slots")
+@RequestMapping("/api/itineraries/{itineraryId}/slots")
 @RequiredArgsConstructor
 public class ItinerarySlotController {
     private final ItinerarySlotService itinerarySlotService;
@@ -36,7 +36,7 @@ public class ItinerarySlotController {
 
     @PostMapping
     @Operation(summary = "슬롯 추가 (프로그램, 식사, 행사, 직접 입력)")
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST, ErrorCode.EVENT_NOT_FOUND, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.EVENT_NOT_FOUND, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
     public GlobalResponse<ItineraryResponseDto> addSlot(
             @PathVariable String itineraryId,
             @RequestBody(required = false) SlotAddRequestDto request) {
@@ -53,7 +53,7 @@ public class ItinerarySlotController {
 
     @PutMapping("/{slotId}")
     @Operation(summary = "슬롯 교체")
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST, ErrorCode.EVENT_NOT_FOUND, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.EVENT_NOT_FOUND, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
     public GlobalResponse<ItineraryResponseDto> replaceSlot(
             @PathVariable String itineraryId, @PathVariable String slotId,
             @RequestBody(required = false) SlotReplaceRequestDto request) {
@@ -62,7 +62,7 @@ public class ItinerarySlotController {
 
     @PatchMapping("/order")
     @Operation(summary = "슬롯 순서 변경")
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST, ErrorCode.ITINERARY_NOT_FOUND})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.ITINERARY_NOT_FOUND})
     public GlobalResponse<ItineraryResponseDto> reorderSlots(
             @PathVariable String itineraryId,
             @RequestBody(required = false) SlotOrderRequestDto request) {
@@ -71,7 +71,7 @@ public class ItinerarySlotController {
 
     @GetMapping("/{slotId}/alternatives")
     @Operation(summary = "교체 후보 조회 (행사)")
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
     public GlobalResponse<SlotCandidatesResponseDto> getAlternatives(
             @PathVariable String itineraryId, @PathVariable String slotId,
             @RequestParam(required = false) Integer limit) {
@@ -80,7 +80,7 @@ public class ItinerarySlotController {
 
     @GetMapping("/{slotId}/meal-candidates")
     @Operation(summary = "식사 후보 조회 (샘플)")
-    @ApiErrorCodes({ErrorCode.INVALID_REQUEST, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
+    @ApiErrorCodes({ErrorCode.REQUEST_VALUE_INVALID, ErrorCode.ITINERARY_NOT_FOUND, ErrorCode.SLOT_NOT_FOUND})
     public GlobalResponse<SlotCandidatesResponseDto> getMealCandidates(
             @PathVariable String itineraryId, @PathVariable String slotId,
             @RequestParam(required = false) Integer limit) {

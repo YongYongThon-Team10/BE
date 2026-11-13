@@ -30,15 +30,15 @@ class ItineraryCandidateApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.candidates[0].kind").value("event"))
                 .andExpect(jsonPath("$.data.candidates[0].eventId").value("T-NEAR3"))
                 .andExpect(jsonPath("$.data.candidates[0].name").value("근처 무료 체험"))
-                .andExpect(jsonPath("$.data.candidates[0].category").value("체험"))
+                .andExpect(jsonPath("$.data.candidates[0].category").value("행사"))
                 .andExpect(jsonPath("$.data.candidates[0].placeName").value("근처 체험관"))
                 .andExpect(jsonPath("$.data.candidates[0].time").value("11:00 ~ 12:00"))
-                .andExpect(jsonPath("$.data.candidates[0].durationMin").value(90))
+                .andExpect(jsonPath("$.data.candidates[0].durationMin").value(60))
                 .andExpect(jsonPath("$.data.candidates[0].costAmount").value(0))
                 .andExpect(jsonPath("$.data.candidates[0].costText").value("무료"))
                 .andExpect(jsonPath("$.data.candidates[0].distanceKmFromPrev").value(1.7))
                 .andExpect(jsonPath("$.data.candidates[0].estimatedMinutes").value(5))
-                .andExpect(jsonPath("$.data.candidates[0].description").value("체험 설명"))
+                .andExpect(jsonPath("$.data.candidates[0].description").value(nullValue()))
                 .andExpect(jsonPath("$.data.candidates[0].source").value("event"))
                 .andExpect(jsonPath("$.data.candidates[1].candidateId").value("cnd_2"))
                 .andExpect(jsonPath("$.data.candidates[1].eventId").value("T-NOTIME"))
@@ -57,7 +57,7 @@ class ItineraryCandidateApiTest extends ApiTestSupport {
         // 슬롯이 바뀌면 이전 후보는 지워진다
         putJson(slot(id, "slt_3"), "{\"replaceWithCandidateId\": \"cnd_2\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4044"));
+                .andExpect(jsonPath("$.error.code").value("E4043"));
     }
 
     @Test
@@ -68,7 +68,7 @@ class ItineraryCandidateApiTest extends ApiTestSupport {
                 .andExpect(jsonPath("$.data.candidates", hasSize(1)));
         putJson(slot(id, "slt_3"), "{\"replaceWithCandidateId\": \"cnd_2\"}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4044"));
+                .andExpect(jsonPath("$.error.code").value("E4043"));
     }
 
     @Test
@@ -82,18 +82,18 @@ class ItineraryCandidateApiTest extends ApiTestSupport {
     @Test
     void 행사_후보_조회_오류() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
-        getUrl(slot(id, "slt_2") + "/alternatives").andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(slot(id, "slt_1") + "/alternatives").andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(slot(id, "slt_5") + "/alternatives").andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(slot(id, "slt_3") + "/alternatives?limit=11").andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(slot(id, "slt_3") + "/alternatives?limit=0").andExpect(jsonPath("$.error.code").value("C001"));
-        getUrl(slot(id, "slt_3") + "/alternatives?limit=abc").andExpect(jsonPath("$.error.code").value("C001"));
+        getUrl(slot(id, "slt_2") + "/alternatives").andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(slot(id, "slt_1") + "/alternatives").andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(slot(id, "slt_5") + "/alternatives").andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(slot(id, "slt_3") + "/alternatives?limit=11").andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(slot(id, "slt_3") + "/alternatives?limit=0").andExpect(jsonPath("$.error.code").value("E4001"));
+        getUrl(slot(id, "slt_3") + "/alternatives?limit=abc").andExpect(jsonPath("$.error.code").value("E4001"));
         getUrl(slot(id, "slt_99") + "/alternatives")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4044"));
+                .andExpect(jsonPath("$.error.code").value("E4043"));
         getUrl(slot("itn_nope", "slt_3") + "/alternatives")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error.code").value("C4043"));
+                .andExpect(jsonPath("$.error.code").value("E4042"));
     }
 
     @Test
@@ -127,9 +127,9 @@ class ItineraryCandidateApiTest extends ApiTestSupport {
     @Test
     void 식사_후보_조회_오류() throws Exception {
         String id = createItinerary("T-BASE", "2026-11-14");
-        getUrl(slot(id, "slt_2") + "/meal-candidates?limit=6").andExpect(jsonPath("$.error.code").value("C001"));
+        getUrl(slot(id, "slt_2") + "/meal-candidates?limit=6").andExpect(jsonPath("$.error.code").value("E4001"));
         getUrl(slot(id, "slt_3") + "/meal-candidates")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error.code").value("C001"));
+                .andExpect(jsonPath("$.error.code").value("E4001"));
     }
 }

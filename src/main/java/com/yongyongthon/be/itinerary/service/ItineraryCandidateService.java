@@ -2,18 +2,18 @@ package com.yongyongthon.be.itinerary.service;
 
 import com.yongyongthon.be.common.config.AppProperties;
 import com.yongyongthon.be.common.response.GlobalResponse;
+import com.yongyongthon.be.common.response.RequestValueInvalidException;
 import com.yongyongthon.be.common.util.Geo;
 import com.yongyongthon.be.event.data.dto.EventInfo;
 import com.yongyongthon.be.event.data.dto.NearbyEvent;
 import com.yongyongthon.be.event.data.exception.EventNotFoundException;
-import com.yongyongthon.be.event.data.repository.EventRepository;
+import com.yongyongthon.be.event.service.EventCatalog;
 import com.yongyongthon.be.itinerary.data.dto.CandidateDto;
 import com.yongyongthon.be.itinerary.data.dto.SlotCandidatesResponseDto;
 import com.yongyongthon.be.itinerary.data.entity.Itinerary;
 import com.yongyongthon.be.itinerary.data.entity.ItinerarySlot;
 import com.yongyongthon.be.itinerary.data.entity.SlotCandidate;
 import com.yongyongthon.be.itinerary.data.enums.SlotType;
-import com.yongyongthon.be.itinerary.data.exception.InvalidItineraryRequestException;
 import com.yongyongthon.be.itinerary.data.repository.SlotCandidateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class ItineraryCandidateService {
     private static final String MEAL_CATEGORY = "먹거리";
 
     private final ItineraryService itineraryService;
-    private final EventRepository eventRepository;
+    private final EventCatalog eventCatalog;
     private final SlotCandidateRepository slotCandidateRepository;
     private final NearbyFinder nearbyFinder;
     private final AppProperties props;
@@ -53,10 +53,10 @@ public class ItineraryCandidateService {
         ItinerarySlot slot = ItinerarySlotService.getSlotEntity(it, slotId);
         String type = slot.getType();
         if (SlotType.MEAL.equals(type) || SlotType.EVENT.equals(type) || SlotType.RETURN.equals(type)) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
 
-        EventInfo base = eventRepository.findById(it.getBaseEventId()).orElseThrow(EventNotFoundException::new);
+        EventInfo base = eventCatalog.findById(it.getBaseEventId()).orElseThrow(EventNotFoundException::new);
         double[] anchor = nearbyFinder.anchorBefore(it, slot, base);
         List<NearbyEvent> nearby = anchor == null
                 ? List.of()
@@ -88,7 +88,7 @@ public class ItineraryCandidateService {
         Itinerary it = itineraryService.getItineraryEntity(itineraryId);
         ItinerarySlot slot = ItinerarySlotService.getSlotEntity(it, slotId);
         if (!SlotType.MEAL.equals(slot.getType())) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         List<CandidateDto> candidates = MealSamples.ALL.stream()
                 .limit(size)
@@ -116,7 +116,7 @@ public class ItineraryCandidateService {
             return DEFAULT_LIMIT;
         }
         if (limit < 1 || limit > max) {
-            throw new InvalidItineraryRequestException();
+            throw new RequestValueInvalidException();
         }
         return limit;
     }
