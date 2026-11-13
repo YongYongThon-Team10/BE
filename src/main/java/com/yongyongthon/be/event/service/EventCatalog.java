@@ -4,7 +4,11 @@ import com.yongyongthon.be.common.util.Geo;
 import com.yongyongthon.be.event.data.dto.EventInfo;
 import com.yongyongthon.be.event.data.dto.EventProgram;
 import com.yongyongthon.be.event.data.dto.NearbyEvent;
+import com.yongyongthon.be.event.data.entity.Event;
 import com.yongyongthon.be.event.data.repository.EventRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +30,9 @@ public class EventCatalog {
 
     private final EventRepository eventRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     public Optional<EventInfo> findById(String eventId) {
         if (eventId == null) {
             return Optional.empty();
@@ -43,7 +50,7 @@ public class EventCatalog {
      */
     public List<NearbyEvent> findNearby(LocalDate date, double lat, double lng, double radiusKm,
                                         boolean freeOnly, Set<String> excludeIds) {
-        return eventRepository.findAll().stream()
+        return allEventsWithoutFlush().stream()
                 .map(EventInfo::from)
                 .filter(e -> e.runsOn(date))
                 .filter(EventInfo::hasCoords)
@@ -54,6 +61,16 @@ public class EventCatalog {
                 .sorted(Comparator.comparingDouble(NearbyEvent::distanceKm)
                         .thenComparing(n -> n.event().eventId()))
                 .toList();
+    }
+
+    /**
+     * 행사 전체. 일정을 짜는 도중(재추천)에 불리면 아직 slotId가 없는 슬롯이 영속성 컨텍스트에 있어서,
+     * 조회 전 자동 flush가 일어나면 slot_id NOT NULL 위반이 난다. 행사 테이블만 읽으므로 flush하지 않는다.
+     */
+    private List<Event> allEventsWithoutFlush() {
+        return entityManager.createQuery("select e from Event e", Event.class)
+                .setFlushMode(FlushModeType.COMMIT)
+                .getResultList();
     }
 
     public List<EventProgram> findPrograms(String eventId) {
