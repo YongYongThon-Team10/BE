@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -58,11 +59,22 @@ public class SecurityConfiguration {
                                 "/api/v1/auth/signin",
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/reissue",
+                                // S5, S6 일정과 내 코스는 로그인 없이 쓰는 데모 API (지시서 3-2)
+                                // 관심 행사(/api/me/favorites)는 로그인이 필요하므로 /api/me/** 전체를 열지 않는다
+                                "/api/itineraries/**",
+                                "/api/shared/**",
+                                "/api/me/courses",
+                                "/api/me/courses/**",
+                                "/api/me/calendar",
+                                "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
+                        // 명세서01: 토큰은 선택. 있으면 필터가 인증 정보를 채워 isLiked 등에 쓰고, 없어도 막지 않는다
+                        .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/**", "/api/places/search").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/search/parse", "/api/itineraries").permitAll()
                         .anyRequest().authenticated()
         );
 
