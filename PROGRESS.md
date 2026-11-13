@@ -151,10 +151,27 @@ E4002(거리순 좌표 누락), E5022(장소 검색 실패)는 신형 담당 API
 
 1. `SecurityConfiguration`: `/swagger-ui.html`이 `permitAll()`에 없어서 README의 Swagger 주소로 들어가면 401 C4011이 났다. 목록에 추가했다 (`/swagger-ui/index.html`은 원래 열림).
 
+## 배포 (prod) 테이블
+
+prod는 `ddl-auto: validate`라서 테이블을 만들지 않고 엔티티와 맞는지만 검사한다. 배포 DB에는 먼저 `db/schema.sql`을 실행한다 (2026-11-14 일정, 코스, user 테이블 추가).
+
+```
+docker exec -i be-mariadb mariadb -uroot -proot be < db/schema.sql
+```
+
+로컬에서 확인하는 방법: 빈 DB를 하나 만들어 `schema.sql`을 넣고, validate로 서버를 켠다.
+
+```
+docker exec be-mariadb mariadb -uroot -proot -e "CREATE DATABASE be_prodcheck"
+cmd /c "docker exec -i be-mariadb mariadb -uroot -proot be_prodcheck < db\schema.sql"
+.\gradlew.bat bootRun --args="--spring.jpa.hibernate.ddl-auto=validate --spring.datasource.url=jdbc:mariadb://localhost:3307/be_prodcheck"
+```
+
 ## 확인 필요
 
 1. 행사 DB 컬럼 이름이 `seed_events.py`의 `DB_COLUMNS` 후보와 맞는지 (첫 실행 때 확인. 확실한 것은 `event_id`, `title`, `source_category`, `start_date`, `end_date`, `event_hours`, `venue`, `address`, `verified_address`, `fee`, `latitude`, `longitude`, `duplicate_status`)
 2. 위 가정 2번 (COORD_MISSING 범위)
+3. 공유 링크 주소 `app.share-base-url`이 임시값(`https://example.com/shared`)이다. 배포 주소가 정해지면 바꾼다
 
 ## 신형 브랜치와 합칠 때 정한 것 (2026-11-14)
 
