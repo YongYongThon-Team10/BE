@@ -13,7 +13,14 @@ public enum ErrorCode {
     USER_DATA_NOT_FOUND("C4041", "사용자를 찾을 수 없습니다.", 404),
     DATA_NOT_FOUND("C404", "정보를 불러올 수 없습니다.", 404),
     EMAIL_DUPLICATION("C4091", "이미 존재하는 이메일입니다.", 409),
-    UNKNOWN_ERROR("C500", "오류가 발생하였습니다.", 500);
+    SLOT_NOT_DELETABLE("C4001", "삭제할 수 없는 항목입니다.", 400),
+    EVENT_NOT_FOUND("C4042", "행사를 찾을 수 없습니다.", 404),
+    ITINERARY_NOT_FOUND("C4043", "일정을 찾을 수 없습니다.", 404),
+    SLOT_NOT_FOUND("C4044", "일정 항목을 찾을 수 없습니다.", 404),
+    SHARED_ITINERARY_NOT_FOUND("C4045", "공유된 일정을 찾을 수 없습니다.", 404),
+    UNKNOWN_ERROR("C500", "오류가 발생하였습니다.", 500),
+    AI_SERVER_ERROR("C5021", "AI 서버 호출에 실패했습니다.", 502),
+    AI_TIMEOUT("C5041", "AI 응답 시간이 초과되었습니다.", 504);
 
     private final String code;
     private final String message;

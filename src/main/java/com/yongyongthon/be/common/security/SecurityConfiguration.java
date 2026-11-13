@@ -58,6 +58,11 @@ public class SecurityConfiguration {
                                 "/api/v1/auth/signin",
                                 "/api/v1/auth/signup",
                                 "/api/v1/auth/reissue",
+                                // S5, S6 일정과 내 코스는 로그인 없이 쓰는 데모 API (지시서 3-2)
+                                "/api/v1/itineraries/**",
+                                "/api/v1/shared/**",
+                                "/api/v1/me/**",
+                                "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
